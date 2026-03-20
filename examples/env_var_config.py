@@ -7,6 +7,7 @@ or when sharing config across multiple scripts.
 Copy .env.example to .env and fill in your settings, or export them directly.
 """
 
+import argparse
 import asyncio
 
 import lightrag_spanner
@@ -18,7 +19,7 @@ from lightrag.llm.gemini import gemini_model_complete
 lightrag_spanner.register()
 
 
-async def main():
+async def main(cleanup: bool = False):
     # No addon_params needed — Spanner config comes from env vars
     rag = LightRAG(
         working_dir="./rag_storage",
@@ -44,8 +45,12 @@ async def main():
     )
     print(result)
 
-    await rag.finalize_storages()
+    if cleanup:
+        await rag.finalize_storages()
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    parser = argparse.ArgumentParser(description="LightRAG + Spanner env var config example")
+    parser.add_argument("--cleanup", action="store_true", help="Drop Spanner tables on exit")
+    args = parser.parse_args()
+    asyncio.run(main(cleanup=args.cleanup))

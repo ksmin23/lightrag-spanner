@@ -7,6 +7,7 @@ Demonstrates:
     - Tracking document processing status
 """
 
+import argparse
 import asyncio
 
 import lightrag_spanner
@@ -36,7 +37,7 @@ DOCUMENTS = [
 ]
 
 
-async def main():
+async def main(cleanup: bool = False):
     rag = LightRAG(
         working_dir="./rag_storage",
         llm_model_func=gemini_model_complete,
@@ -78,8 +79,12 @@ async def main():
         print(chunk, end="", flush=True)
     print("\n")
 
-    await rag.finalize_storages()
+    if cleanup:
+        await rag.finalize_storages()
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    parser = argparse.ArgumentParser(description="LightRAG + Spanner batch insert and query example")
+    parser.add_argument("--cleanup", action="store_true", help="Drop Spanner tables on exit")
+    args = parser.parse_args()
+    asyncio.run(main(cleanup=args.cleanup))

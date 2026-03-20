@@ -6,6 +6,7 @@ Demonstrates direct access to the Spanner graph storage for:
     - Extracting a subgraph via BFS
 """
 
+import argparse
 import asyncio
 
 import lightrag_spanner
@@ -17,7 +18,7 @@ from lightrag.llm.gemini import gemini_model_complete
 lightrag_spanner.register()
 
 
-async def main():
+async def main(cleanup: bool = False):
     rag = LightRAG(
         working_dir="./rag_storage",
         llm_model_func=gemini_model_complete,
@@ -84,8 +85,12 @@ async def main():
         for edge in kg.edges[:5]:
             print(f"  Edge: {edge.source} -> {edge.target} [{edge.type}]")
 
-    await rag.finalize_storages()
+    if cleanup:
+        await rag.finalize_storages()
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    parser = argparse.ArgumentParser(description="LightRAG + Spanner knowledge graph exploration example")
+    parser.add_argument("--cleanup", action="store_true", help="Drop Spanner tables on exit")
+    args = parser.parse_args()
+    asyncio.run(main(cleanup=args.cleanup))

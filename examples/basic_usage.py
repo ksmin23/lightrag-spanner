@@ -10,6 +10,7 @@ Prerequisites:
         gcloud auth application-default login
 """
 
+import argparse
 import asyncio
 
 import lightrag_spanner
@@ -22,7 +23,7 @@ from lightrag.llm.gemini import gemini_model_complete
 lightrag_spanner.register()
 
 
-async def main():
+async def main(cleanup: bool = False):
     # Step 2: Create a LightRAG instance with Spanner storage
     rag = LightRAG(
         working_dir="./rag_storage",
@@ -69,9 +70,13 @@ async def main():
     print(result)
     print()
 
-    # Step 6: Clean up
-    await rag.finalize_storages()
+    # Step 6: Clean up (only when --cleanup is passed)
+    if cleanup:
+        await rag.finalize_storages()
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    parser = argparse.ArgumentParser(description="Basic LightRAG + Spanner example")
+    parser.add_argument("--cleanup", action="store_true", help="Drop Spanner tables on exit")
+    args = parser.parse_args()
+    asyncio.run(main(cleanup=args.cleanup))
