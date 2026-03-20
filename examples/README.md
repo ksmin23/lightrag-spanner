@@ -66,10 +66,26 @@ rag = LightRAG(
 )
 ```
 
-### 5. Set Your Gemini API Key
+### 5. Configure LLM Authentication
+
+**Option A — Gemini via Vertex AI** (recommended when running on GCP):
 
 ```bash
-export GEMINI_API_KEY=...
+export GOOGLE_GENAI_USE_VERTEXAI=true
+```
+
+Uses Application Default Credentials (ADC). No API key needed.
+
+**Option B — Gemini via AI Studio**:
+
+```bash
+export GEMINI_API_KEY=your-gemini-api-key
+```
+
+**Option C — OpenAI**:
+
+```bash
+export OPENAI_API_KEY=your-openai-api-key
 ```
 
 ## Examples

@@ -84,6 +84,18 @@ rag = LightRAG(
 )
 ```
 
+## LLM Authentication
+
+LLM and embedding authentication is handled by **LightRAG core**, not by this package. Choose one of the following options depending on your LLM provider:
+
+| Option | Environment Variable | Description |
+|---|---|---|
+| Gemini via Vertex AI | `GOOGLE_GENAI_USE_VERTEXAI=true` | Uses Application Default Credentials (ADC). No API key needed. Recommended on GCP. |
+| Gemini via AI Studio | `GEMINI_API_KEY` | Uses a Gemini API key from [AI Studio](https://aistudio.google.com/). |
+| OpenAI | `OPENAI_API_KEY` | Uses an OpenAI API key. |
+
+> **Note:** When using Vertex AI mode, LightRAG's `gemini.py` checks for the exact string `"true"` (case-insensitive). Values like `"1"` or `"yes"` will **not** activate Vertex AI mode.
+
 ## Prerequisites
 
 ### GCP Authentication
