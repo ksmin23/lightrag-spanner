@@ -7,7 +7,8 @@ A collection of examples demonstrating how to use Google Cloud Spanner as a stor
 ### 1. Install Python Packages
 
 ```bash
-pip install lightrag-hku lightrag-spanner
+pip install lightrag-hku
+pip install git+https://github.com/ksmin23/lightrag-spanner.git@v0.1.0
 ```
 
 ### 2. Authenticate with GCP
@@ -28,13 +29,18 @@ A Spanner instance and database must already exist in your GCP project.
 Tables are created automatically by `lightrag-spanner` during initialization.
 
 ```bash
-gcloud spanner instances create my-instance \
-    --config=regional-us-central1 \
-    --description="LightRAG Instance" \
-    --nodes=1
+export SPANNER_INSTANCE=my-instance
+export SPANNER_DATABASE=my-database
+export GOOGLE_CLOUD_LOCATION="us-central1"
 
-gcloud spanner databases create my-database \
-    --instance=my-instance
+gcloud spanner instances create $SPANNER_INSTANCE \
+    --config=regional-$GOOGLE_CLOUD_LOCATION \
+    --description="LightRAG Instance" \
+    --nodes=1 \
+    --edition=ENTERPRISE
+
+gcloud spanner databases create $SPANNER_DATABASE \
+    --instance=$SPANNER_INSTANCE
 ```
 
 ### 4. Configure Spanner Connection (choose one)
@@ -42,7 +48,7 @@ gcloud spanner databases create my-database \
 **Option A — Environment variables:**
 
 ```bash
-export SPANNER_PROJECT=my-project
+export GOOGLE_CLOUD_PROJECT=my-project
 export SPANNER_INSTANCE=my-instance
 export SPANNER_DATABASE=my-database
 ```

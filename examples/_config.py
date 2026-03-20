@@ -49,4 +49,5 @@ def get_embedding_func() -> EmbeddingFunc:
         max_token_size=EMBEDDING_MAX_TOKEN_SIZE,
         model_name=EMBEDDING_MODEL_NAME,
         func=gemini_embed.func,
+        send_dimensions=True,
     )

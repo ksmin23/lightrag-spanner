@@ -238,6 +238,10 @@ class SpannerVectorStorage(BaseVectorStorage):
         if threshold is not None:
             self.cosine_better_than_threshold = threshold
 
+        # Exclude columns already defined as fixed schema columns
+        _fixed_cols = {"id", "workspace", "embedding", "content", "created_at"}
+        self._extra_meta = sorted(self.meta_fields - _fixed_cols)
+
     async def initialize(self):
         if self._manager is None:
             cfg = self._spanner_cfg
@@ -245,9 +249,9 @@ class SpannerVectorStorage(BaseVectorStorage):
                 cfg["project_id"], cfg["instance_id"], cfg["database_id"]
             )
 
-        # Build columns: id, workspace, embedding, content, + meta fields
+        # Build columns: id, workspace, embedding, content, + extra meta fields
         meta_cols = "".join(
-            f",\n    {f} STRING(MAX)" for f in sorted(self.meta_fields)
+            f",\n    {f} STRING(MAX)" for f in self._extra_meta
         )
         ddl = [
             f"""CREATE TABLE {self._table_name} (
@@ -280,7 +284,7 @@ class SpannerVectorStorage(BaseVectorStorage):
         list_data = []
         for k, v in data.items():
             entry: dict[str, Any] = {"id": k, "workspace": self.workspace, "created_at": current_time}
-            for mf in self.meta_fields:
+            for mf in self._extra_meta:
                 entry[mf] = str(v.get(mf, ""))
             list_data.append(entry)
 
@@ -298,9 +302,7 @@ class SpannerVectorStorage(BaseVectorStorage):
             entry["embedding"] = embeddings[i].tolist()
             entry["content"] = contents[i]
 
-        columns = ["id", "workspace", "embedding", "content", "created_at"] + sorted(
-            self.meta_fields
-        )
+        columns = ["id", "workspace", "embedding", "content", "created_at"] + self._extra_meta
 
         def _write(txn):
             rows = []
@@ -325,7 +327,7 @@ class SpannerVectorStorage(BaseVectorStorage):
             qvec = emb[0].tolist()
 
         # Fetch all columns except embedding for result set
-        meta_cols = ", ".join(sorted(self.meta_fields)) if self.meta_fields else ""
+        meta_cols = ", ".join(self._extra_meta) if self._extra_meta else ""
         select_cols = "id, content, created_at"
         if meta_cols:
             select_cols += f", {meta_cols}"
@@ -347,7 +349,7 @@ class SpannerVectorStorage(BaseVectorStorage):
         qvec_np = np.array(qvec, dtype=np.float64)
         scored = []
         num_fixed_cols = 3  # id, content, created_at
-        num_meta = len(self.meta_fields)
+        num_meta = len(self._extra_meta)
         for row in rows:
             row_id = row[0]
             content = row[1]
@@ -370,7 +372,7 @@ class SpannerVectorStorage(BaseVectorStorage):
                 "created_at": created_at,
                 "distance": cosine_sim,
             }
-            sorted_meta = sorted(self.meta_fields)
+            sorted_meta = self._extra_meta
             for j, mf in enumerate(sorted_meta):
                 doc[mf] = meta_values[j] if j < len(meta_values) else ""
             scored.append(doc)
@@ -381,7 +383,7 @@ class SpannerVectorStorage(BaseVectorStorage):
     # --- get / delete ---
 
     async def get_by_id(self, id: str) -> dict[str, Any] | None:
-        meta_cols = ", ".join(sorted(self.meta_fields)) if self.meta_fields else ""
+        meta_cols = ", ".join(self._extra_meta) if self._extra_meta else ""
         select_cols = "id, content, created_at"
         if meta_cols:
             select_cols += f", {meta_cols}"
@@ -400,7 +402,7 @@ class SpannerVectorStorage(BaseVectorStorage):
             return None
         row = rows[0]
         doc: dict[str, Any] = {"id": row[0], "content": row[1], "created_at": row[2]}
-        sorted_meta = sorted(self.meta_fields)
+        sorted_meta = self._extra_meta
         for j, mf in enumerate(sorted_meta):
             doc[mf] = row[3 + j] if 3 + j < len(row) else ""
         return doc
@@ -408,7 +410,7 @@ class SpannerVectorStorage(BaseVectorStorage):
     async def get_by_ids(self, ids: list[str]) -> list[dict[str, Any]]:
         if not ids:
             return []
-        meta_cols = ", ".join(sorted(self.meta_fields)) if self.meta_fields else ""
+        meta_cols = ", ".join(self._extra_meta) if self._extra_meta else ""
         select_cols = "id, content, created_at"
         if meta_cols:
             select_cols += f", {meta_cols}"
@@ -427,7 +429,7 @@ class SpannerVectorStorage(BaseVectorStorage):
 
         rows_map = await _run_sync(self._manager.database.run_in_transaction, _query)
         results = []
-        sorted_meta = sorted(self.meta_fields)
+        sorted_meta = self._extra_meta
         for doc_id in ids:
             row = rows_map.get(doc_id)
             if row is None:

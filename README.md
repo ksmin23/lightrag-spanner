@@ -14,7 +14,8 @@ This package provides four Spanner-backed storage classes as an external plugin 
 ## Installation
 
 ```bash
-pip install lightrag-hku lightrag-spanner
+pip install lightrag-hku
+pip install git+https://github.com/ksmin23/lightrag-spanner.git@v0.1.0
 ```
 
 ## Quick Start
@@ -59,7 +60,7 @@ Spanner connection settings can be provided via `addon_params` or environment va
 
 | addon_params key | Environment Variable | Description |
 |---|---|---|
-| `spanner_project_id` | `SPANNER_PROJECT` | GCP project ID |
+| `spanner_project_id` | `GOOGLE_CLOUD_PROJECT` | GCP project ID |
 | `spanner_instance_id` | `SPANNER_INSTANCE` | Spanner instance ID |
 | `spanner_database_id` | `SPANNER_DATABASE` | Spanner database ID |
 | `spanner_graph_name` | `SPANNER_GRAPH_NAME` | Property graph name (default: `knowledge_graph`) |
@@ -67,7 +68,7 @@ Spanner connection settings can be provided via `addon_params` or environment va
 ### Using Environment Variables
 
 ```bash
-export SPANNER_PROJECT=my-project
+export GOOGLE_CLOUD_PROJECT=my-project
 export SPANNER_INSTANCE=my-instance
 export SPANNER_DATABASE=my-database
 ```
@@ -102,13 +103,18 @@ export GOOGLE_APPLICATION_CREDENTIALS=/path/to/service-account-key.json
 Create a Spanner instance and database beforehand. Tables are created automatically during initialization.
 
 ```bash
-gcloud spanner instances create my-instance \
-    --config=regional-us-central1 \
-    --description="LightRAG Instance" \
-    --nodes=1
+export SPANNER_INSTANCE=my-instance
+export SPANNER_DATABASE=my-database
+export GOOGLE_CLOUD_LOCATION="us-central1"
 
-gcloud spanner databases create my-database \
-    --instance=my-instance
+gcloud spanner instances create $SPANNER_INSTANCE \
+    --config=regional-$GOOGLE_CLOUD_LOCATION \
+    --description="LightRAG Instance" \
+    --nodes=1 \
+    --edition=ENTERPRISE
+
+gcloud spanner databases create $SPANNER_DATABASE \
+    --instance=$SPANNER_INSTANCE
 ```
 
 ## Project Structure

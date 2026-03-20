@@ -83,7 +83,8 @@ def get_spanner_config(global_config: dict[str, Any]) -> dict[str, str]:
     addon = global_config.get("addon_params", {})
     return {
         "project_id": addon.get(
-            "spanner_project_id", os.environ.get("SPANNER_PROJECT", "")
+            "spanner_project_id",
+            os.environ.get("SPANNER_PROJECT") or os.environ.get("GOOGLE_CLOUD_PROJECT", ""),
         ),
         "instance_id": addon.get(
             "spanner_instance_id", os.environ.get("SPANNER_INSTANCE", "")
