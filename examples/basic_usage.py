@@ -2,20 +2,11 @@
 
 Prerequisites:
     1. Install packages:
-        pip install lightrag-hku lightrag-spanner
+        pip install lightrag-hku lightrag-spanner python-dotenv
 
-    2. Configure Spanner access (choose one):
-        a) Set environment variables:
-            export SPANNER_PROJECT=my-project
-            export SPANNER_INSTANCE=my-instance
-            export SPANNER_DATABASE=my-database
+    2. Copy .env.example to .env and fill in your settings.
 
-        b) Or pass via addon_params (shown below)
-
-    3. Set your LLM API key:
-        export OPENAI_API_KEY=sk-...
-
-    4. Authenticate with GCP:
+    3. Authenticate with GCP:
         gcloud auth application-default login
 """
 
@@ -23,7 +14,9 @@ import asyncio
 
 import lightrag_spanner
 from lightrag import LightRAG, QueryParam
-from lightrag.llm.openai import gpt_4o_mini_complete, openai_embed
+
+from _config import LLM_MODEL_NAME, SPANNER_ADDON_PARAMS, get_embedding_func
+from lightrag.llm.gemini import gemini_model_complete
 
 # Step 1: Register Spanner storage classes with LightRAG
 lightrag_spanner.register()
@@ -33,17 +26,18 @@ async def main():
     # Step 2: Create a LightRAG instance with Spanner storage
     rag = LightRAG(
         working_dir="./rag_storage",
-        llm_model_func=gpt_4o_mini_complete,
-        embedding_func=openai_embed,
+        llm_model_func=gemini_model_complete,
+        llm_model_name=LLM_MODEL_NAME,
+        embedding_func=get_embedding_func(),
         kv_storage="SpannerKVStorage",
         vector_storage="SpannerVectorStorage",
         graph_storage="SpannerGraphStorage",
         doc_status_storage="SpannerDocStatusStorage",
-        addon_params={
-            "spanner_project_id": "my-project",
-            "spanner_instance_id": "my-instance",
-            "spanner_database_id": "my-database",
-        },
+        # Disable LLM caching — with remote storage like Spanner, cache lookups
+        # add network round-trips on every LLM call with minimal hit rate benefit.
+        enable_llm_cache=False,
+        enable_llm_cache_for_entity_extract=False,
+        addon_params=SPANNER_ADDON_PARAMS,
     )
 
     # Step 3: Initialize storages (creates Spanner tables if needed)

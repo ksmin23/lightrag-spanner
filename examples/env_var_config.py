@@ -4,18 +4,16 @@ Instead of passing Spanner settings via addon_params, you can use
 environment variables. This is useful for containerized deployments
 or when sharing config across multiple scripts.
 
-Set the following before running:
-    export SPANNER_PROJECT=my-project
-    export SPANNER_INSTANCE=my-instance
-    export SPANNER_DATABASE=my-database
-    export OPENAI_API_KEY=sk-...
+Copy .env.example to .env and fill in your settings, or export them directly.
 """
 
 import asyncio
 
 import lightrag_spanner
 from lightrag import LightRAG, QueryParam
-from lightrag.llm.openai import gpt_4o_mini_complete, openai_embed
+
+from _config import LLM_MODEL_NAME, get_embedding_func
+from lightrag.llm.gemini import gemini_model_complete
 
 lightrag_spanner.register()
 
@@ -24,12 +22,16 @@ async def main():
     # No addon_params needed — Spanner config comes from env vars
     rag = LightRAG(
         working_dir="./rag_storage",
-        llm_model_func=gpt_4o_mini_complete,
-        embedding_func=openai_embed,
+        llm_model_func=gemini_model_complete,
+        llm_model_name=LLM_MODEL_NAME,
+        embedding_func=get_embedding_func(),
         kv_storage="SpannerKVStorage",
         vector_storage="SpannerVectorStorage",
         graph_storage="SpannerGraphStorage",
         doc_status_storage="SpannerDocStatusStorage",
+        # Disable LLM caching to avoid unnecessary Spanner round-trips
+        enable_llm_cache=False,
+        enable_llm_cache_for_entity_extract=False,
     )
 
     await rag.initialize_storages()

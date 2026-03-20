@@ -7,11 +7,12 @@ Demonstrates direct access to the Spanner graph storage for:
 """
 
 import asyncio
-import json
 
 import lightrag_spanner
 from lightrag import LightRAG, QueryParam
-from lightrag.llm.openai import gpt_4o_mini_complete, openai_embed
+
+from _config import LLM_MODEL_NAME, SPANNER_ADDON_PARAMS, get_embedding_func
+from lightrag.llm.gemini import gemini_model_complete
 
 lightrag_spanner.register()
 
@@ -19,17 +20,17 @@ lightrag_spanner.register()
 async def main():
     rag = LightRAG(
         working_dir="./rag_storage",
-        llm_model_func=gpt_4o_mini_complete,
-        embedding_func=openai_embed,
+        llm_model_func=gemini_model_complete,
+        llm_model_name=LLM_MODEL_NAME,
+        embedding_func=get_embedding_func(),
         kv_storage="SpannerKVStorage",
         vector_storage="SpannerVectorStorage",
         graph_storage="SpannerGraphStorage",
         doc_status_storage="SpannerDocStatusStorage",
-        addon_params={
-            "spanner_project_id": "my-project",
-            "spanner_instance_id": "my-instance",
-            "spanner_database_id": "my-database",
-        },
+        # Disable LLM caching to avoid unnecessary Spanner round-trips
+        enable_llm_cache=False,
+        enable_llm_cache_for_entity_extract=False,
+        addon_params=SPANNER_ADDON_PARAMS,
     )
 
     await rag.initialize_storages()

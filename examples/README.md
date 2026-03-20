@@ -60,10 +60,10 @@ rag = LightRAG(
 )
 ```
 
-### 5. Set Your LLM API Key
+### 5. Set Your Gemini API Key
 
 ```bash
-export OPENAI_API_KEY=sk-...
+export GEMINI_API_KEY=...
 ```
 
 ## Examples
