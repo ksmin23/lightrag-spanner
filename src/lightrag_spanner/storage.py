@@ -326,18 +326,34 @@ class SpannerVectorStorage(BaseVectorStorage):
             emb = await self.embedding_func([query], _priority=5)
             qvec = emb[0].tolist()
 
-        # Fetch all columns except embedding for result set
         meta_cols = ", ".join(self._extra_meta) if self._extra_meta else ""
         select_cols = "id, content, created_at"
         if meta_cols:
             select_cols += f", {meta_cols}"
 
+        # COSINE_DISTANCE returns 0 (identical) to 2 (opposite).
+        # Convert similarity threshold: max_distance = 1 - similarity_threshold
+        max_distance = 1.0 - self.cosine_better_than_threshold
+
         def _query(txn):
             result = txn.execute_sql(
-                f"SELECT {select_cols}, embedding FROM {self._table_name} "
-                "WHERE workspace = @ws",
-                params={"ws": self.workspace},
-                param_types={"ws": spanner.param_types.STRING},
+                f"SELECT {select_cols}, "
+                f"COSINE_DISTANCE(embedding, @qvec) AS dist "
+                f"FROM {self._table_name} "
+                "WHERE workspace = @ws "
+                "AND embedding IS NOT NULL "
+                "ORDER BY dist ASC "
+                "LIMIT @top_k",
+                params={
+                    "ws": self.workspace,
+                    "qvec": qvec,
+                    "top_k": top_k,
+                },
+                param_types={
+                    "ws": spanner.param_types.STRING,
+                    "qvec": spanner.param_types.Array(spanner.param_types.FLOAT64),
+                    "top_k": spanner.param_types.INT64,
+                },
             )
             return list(result)
 
@@ -345,40 +361,30 @@ class SpannerVectorStorage(BaseVectorStorage):
         if not rows:
             return []
 
-        # Compute cosine distances
-        qvec_np = np.array(qvec, dtype=np.float64)
-        scored = []
-        num_fixed_cols = 3  # id, content, created_at
         num_meta = len(self._extra_meta)
+        scored = []
         for row in rows:
             row_id = row[0]
             content = row[1]
             created_at = row[2]
             meta_values = row[3 : 3 + num_meta] if num_meta else []
-            embedding = row[3 + num_meta]
-            if not embedding:
+            cosine_dist = row[3 + num_meta]
+
+            # Filter by similarity threshold (distance <= max_distance)
+            if cosine_dist > max_distance:
                 continue
-            emb_np = np.array(embedding, dtype=np.float64)
-            norm_q = np.linalg.norm(qvec_np)
-            norm_e = np.linalg.norm(emb_np)
-            if norm_q == 0 or norm_e == 0:
-                continue
-            cosine_sim = float(np.dot(qvec_np, emb_np) / (norm_q * norm_e))
-            if cosine_sim < self.cosine_better_than_threshold:
-                continue
+
             doc: dict[str, Any] = {
                 "id": row_id,
                 "content": content,
                 "created_at": created_at,
-                "distance": cosine_sim,
+                "distance": 1.0 - cosine_dist,  # Convert back to similarity
             }
-            sorted_meta = self._extra_meta
-            for j, mf in enumerate(sorted_meta):
+            for j, mf in enumerate(self._extra_meta):
                 doc[mf] = meta_values[j] if j < len(meta_values) else ""
             scored.append(doc)
 
-        scored.sort(key=lambda x: x["distance"], reverse=True)
-        return scored[:top_k]
+        return scored
 
     # --- get / delete ---
 
