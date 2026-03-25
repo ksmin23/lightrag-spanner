@@ -93,7 +93,7 @@ def get_spanner_config(global_config: dict[str, Any]) -> dict[str, str]:
             "spanner_database_id", os.environ.get("SPANNER_DATABASE", "")
         ),
         "graph_name": addon.get(
-            "spanner_graph_name", os.environ.get("SPANNER_GRAPH_NAME", "knowledge_graph")
+            "spanner_graph_name", os.environ.get("SPANNER_GRAPH_NAME", "lightrag_knowledge_graph")
         ),
     }
 

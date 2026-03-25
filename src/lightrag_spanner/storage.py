@@ -726,12 +726,32 @@ class SpannerGraphStorage(BaseGraphStorage):
 
         return await _run_sync(self._manager.database.run_in_transaction, _q)
 
+    async def _ensure_node_exists(self, node_id: str) -> None:
+        """Insert a placeholder node only if it does not already exist.
+
+        Uses an atomic INSERT ... WHERE NOT EXISTS DML statement to avoid
+        race conditions when multiple concurrent upsert_edge calls try to
+        create the same node simultaneously.
+        """
+        def _w(txn):
+            txn.execute_update(
+                f"INSERT INTO {self._nodes_table} (id, workspace, entity_type, description, source_id) "
+                "SELECT @id, @ws, '', '', '' "
+                f"FROM UNNEST([1]) WHERE NOT EXISTS ("
+                f"  SELECT 1 FROM {self._nodes_table} WHERE id = @id AND workspace = @ws"
+                ")",
+                params={"id": node_id, "ws": self.workspace},
+                param_types={"id": spanner.param_types.STRING, "ws": spanner.param_types.STRING},
+            )
+
+        await _run_sync(self._manager.database.run_in_transaction, _w)
+
     async def upsert_edge(
         self, source_node_id: str, target_node_id: str, edge_data: dict[str, str]
     ) -> None:
-        # Ensure both endpoint nodes exist
-        await self.upsert_node(source_node_id, {})
-        await self.upsert_node(target_node_id, {})
+        # Ensure both endpoint nodes exist without overwriting existing data
+        await self._ensure_node_exists(source_node_id)
+        await self._ensure_node_exists(target_node_id)
 
         weight = edge_data.get("weight", "0")
         try:

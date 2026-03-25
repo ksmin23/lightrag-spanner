@@ -7,6 +7,7 @@ Environment variables (all optional — defaults shown):
     GOOGLE_CLOUD_PROJECT     = (required for Spanner)
     SPANNER_INSTANCE         = (required for Spanner)
     SPANNER_DATABASE         = (required for Spanner)
+    SPANNER_GRAPH_NAME       = lightrag_knowledge_graph
     LLM_MODEL_NAME           = gemini-2.5-flash
     EMBEDDING_MODEL_NAME     = gemini-embedding-001
     EMBEDDING_DIM            = 1536
@@ -29,10 +30,13 @@ SPANNER_INSTANCE = os.getenv("SPANNER_INSTANCE", "")
 SPANNER_DATABASE = os.getenv("SPANNER_DATABASE", "")
 WORKSPACE = os.getenv("WORKSPACE", "lightrag")
 
+SPANNER_GRAPH_NAME = os.getenv("SPANNER_GRAPH_NAME", "lightrag_knowledge_graph")
+
 SPANNER_ADDON_PARAMS = {
     "spanner_project_id": SPANNER_PROJECT,
     "spanner_instance_id": SPANNER_INSTANCE,
     "spanner_database_id": SPANNER_DATABASE,
+    "spanner_graph_name": SPANNER_GRAPH_NAME,
 }
 
 # --- LLM settings ---

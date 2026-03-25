@@ -136,18 +136,21 @@ lightrag-spanner/
 ├── pyproject.toml
 ├── src/
 │   └── lightrag_spanner/
-│       ├── __init__.py                    # register() and public exports
-│       ├── client.py                       # SpannerClientManager and helpers
-│       └── storage.py                      # All 4 storage class implementations
-└── examples/
-    ├── README.md
-    ├── .env.example                        # Environment variable template
-    ├── _config.py                          # Shared configuration loader
-    ├── requirements.txt
-    ├── basic_usage.py
-    ├── env_var_config.py
-    ├── batch_insert_and_query.py
-    └── knowledge_graph_exploration.py
+│       ├── __init__.py                         # register() and public exports
+│       ├── client.py                           # SpannerClientManager and helpers
+│       └── storage.py                          # All 4 storage class implementations
+├── examples/
+│   ├── README.md
+│   ├── .env.example                            # Environment variable template
+│   ├── _config.py                              # Shared configuration loader
+│   ├── requirements.txt
+│   ├── basic_usage.py
+│   ├── env_var_config.py
+│   ├── batch_insert_and_query.py
+│   └── knowledge_graph_exploration.py
+└── tests/
+    ├── .env.example                            # Test environment variable template
+    └── test_upsert_edge_preserves_node.py      # Graph storage correctness tests
 ```
 
 ## Design Decisions
