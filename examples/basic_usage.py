@@ -16,7 +16,7 @@ import asyncio
 import lightrag_spanner
 from lightrag import LightRAG, QueryParam
 
-from _config import LLM_MODEL_NAME, SPANNER_ADDON_PARAMS, get_embedding_func
+from _config import LLM_MODEL_NAME, SPANNER_ADDON_PARAMS, WORKSPACE, get_embedding_func
 from lightrag.llm.gemini import gemini_model_complete
 
 # Step 1: Register Spanner storage classes with LightRAG
@@ -27,6 +27,7 @@ async def main(cleanup: bool = False):
     # Step 2: Create a LightRAG instance with Spanner storage
     rag = LightRAG(
         working_dir="./rag_storage",
+        workspace=WORKSPACE,
         llm_model_func=gemini_model_complete,
         llm_model_name=LLM_MODEL_NAME,
         embedding_func=get_embedding_func(),

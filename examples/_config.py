@@ -11,6 +11,7 @@ Environment variables (all optional — defaults shown):
     EMBEDDING_MODEL_NAME     = gemini-embedding-001
     EMBEDDING_DIM            = 1536
     EMBEDDING_MAX_TOKEN_SIZE = 2048
+    WORKSPACE                = default
 """
 
 import os
@@ -26,6 +27,7 @@ load_dotenv(find_dotenv(usecwd=True))
 SPANNER_PROJECT = os.getenv("GOOGLE_CLOUD_PROJECT", "")
 SPANNER_INSTANCE = os.getenv("SPANNER_INSTANCE", "")
 SPANNER_DATABASE = os.getenv("SPANNER_DATABASE", "")
+WORKSPACE = os.getenv("WORKSPACE", "lightrag")
 
 SPANNER_ADDON_PARAMS = {
     "spanner_project_id": SPANNER_PROJECT,

@@ -516,7 +516,7 @@ class SpannerGraphStorage(BaseGraphStorage):
     def __post_init__(self):
         cfg = get_spanner_config(self.global_config)
         self._spanner_cfg = cfg
-        self._graph_name = cfg.get("graph_name", "knowledge_graph")
+        self._graph_name = cfg.get("graph_name", "lightrag_knowledge_graph")
         self._nodes_table = _make_table_name(self.workspace, "nodes")
         self._edges_table = _make_table_name(self.workspace, "edges")
 
@@ -557,15 +557,15 @@ class SpannerGraphStorage(BaseGraphStorage):
             f"""CREATE OR REPLACE PROPERTY GRAPH {self._graph_name}
     NODE TABLES (
         {self._nodes_table}
-            KEY(id)
+            KEY(id, workspace)
             LABEL Entity
                 PROPERTIES(id, entity_type, description, source_id)
     )
     EDGE TABLES (
         {self._edges_table}
-            KEY(id, target_id)
-            SOURCE KEY(id) REFERENCES {self._nodes_table}(id)
-            DESTINATION KEY(target_id) REFERENCES {self._nodes_table}(id)
+            KEY(id, target_id, workspace)
+            SOURCE KEY(id, workspace) REFERENCES {self._nodes_table}(id, workspace)
+            DESTINATION KEY(target_id, workspace) REFERENCES {self._nodes_table}(id, workspace)
             LABEL Relationship
                 PROPERTIES(weight, description, keywords, source_id)
     )"""
@@ -574,12 +574,14 @@ class SpannerGraphStorage(BaseGraphStorage):
             op = db.update_ddl(graph_ddl)
             await _run_sync(op.result)
         except Exception as e:
-            logger.debug("Property graph DDL (may already exist): %s", e)
+            logger.error("Property graph DDL failed: %s", e, exc_info=True)
+            raise
 
         logger.info(
-            "SpannerGraphStorage initialized: nodes=%s, edges=%s",
+            "SpannerGraphStorage initialized: nodes=%s, edges=%s, graph=%s",
             self._nodes_table,
             self._edges_table,
+            self._graph_name,
         )
 
     async def finalize(self):
@@ -710,7 +712,7 @@ class SpannerGraphStorage(BaseGraphStorage):
             return {
                 "src_id": source_node_id,
                 "tgt_id": target_node_id,
-                "weight": str(r[0]) if r[0] is not None else "0",
+                "weight": float(r[0]) if r[0] is not None else 0.0,
                 "description": r[1] or "",
                 "keywords": r[2] or "",
                 "source_id": r[3] or "",
@@ -863,7 +865,7 @@ class SpannerGraphStorage(BaseGraphStorage):
                 {
                     "src_id": r[0],
                     "tgt_id": r[1],
-                    "weight": str(r[2]) if r[2] is not None else "0",
+                    "weight": float(r[2]) if r[2] is not None else 0.0,
                     "description": r[3] or "",
                     "keywords": r[4] or "",
                     "source_id": r[5] or "",
@@ -1077,7 +1079,7 @@ class SpannerGraphStorage(BaseGraphStorage):
                     result[(src, tgt)] = {
                         "src_id": src,
                         "tgt_id": tgt,
-                        "weight": str(r[0]) if r[0] is not None else "0",
+                        "weight": float(r[0]) if r[0] is not None else 0.0,
                         "description": r[1] or "",
                         "keywords": r[2] or "",
                         "source_id": r[3] or "",

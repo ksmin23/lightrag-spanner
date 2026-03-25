@@ -12,7 +12,7 @@ import asyncio
 import lightrag_spanner
 from lightrag import LightRAG, QueryParam
 
-from _config import LLM_MODEL_NAME, SPANNER_ADDON_PARAMS, get_embedding_func
+from _config import LLM_MODEL_NAME, SPANNER_ADDON_PARAMS, WORKSPACE, get_embedding_func
 from lightrag.llm.gemini import gemini_model_complete
 
 lightrag_spanner.register()
@@ -21,6 +21,7 @@ lightrag_spanner.register()
 async def main(cleanup: bool = False):
     rag = LightRAG(
         working_dir="./rag_storage",
+        workspace=WORKSPACE,
         llm_model_func=gemini_model_complete,
         llm_model_name=LLM_MODEL_NAME,
         embedding_func=get_embedding_func(),
