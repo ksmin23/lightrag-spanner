@@ -1,2 +1,2 @@
 lightrag-hku>=1.3.0
-lightrag-spanner @ git+https://github.com/ksmin23/lightrag-spanner.gitex
+lightrag-spanner @ git+https://github.com/ksmin23/lightrag-spanner.git
